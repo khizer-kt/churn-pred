@@ -1,0 +1,62 @@
+# Python
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.Python
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+*.key
+secrets.toml
+.streamlit/secrets.toml
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Model artifacts (regenerate via the training notebook/script)
+*.joblib
+*.pkl
+*.pickle
+artifacts/
+models/*.joblib
+
+# Testing / tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+
+# Logs and local scratch
+*.log
+scratch/
+tmp/
+
+# Assessment brief -- supplied material, not part of the submission
+/ATS_AI_Engineer_Assessment_Brief.md
+/ATS_AI_Engineer_Assessment_Brief.pdf
+
+# Duplicate dataset at the repo root. The project reads data/raw/Customer-Churn.csv
+# (src/config.py RAW_CSV) and nothing references this copy. Leading slash is
+# required: a bare filename would also ignore the tracked copy under data/raw/.
+/Customer-Churn.csv
+
+# Internal planning and build docs. Kept locally as the source material for the
+# README, but not part of the submission -- the README carries the data-issue
+# findings, metric justification and agent design on its own.
+/docs/
