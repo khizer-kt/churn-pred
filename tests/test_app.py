@@ -264,3 +264,24 @@ def test_example_buttons_render_once_per_page(stub_chat):
     keys = [b.key for b in app.button if b.key and b.key.startswith("eg_")]
     assert len(keys) == len(set(keys)) == len(EXAMPLES)
     assert not app.exception
+
+
+def test_reviewed_answer_shows_the_reviewers_feedback(stub_chat):
+    """A rewrite must show what was sent back, or the review is invisible."""
+    app = AppTest.from_file(APP, default_timeout=TIMEOUT)
+    app.session_state["messages"] = [
+        {"role": "user", "content": "does churn differ by gender?"},
+        {"role": "assistant", "content": "There is no meaningful difference.",
+         "response": {"text": "There is no meaningful difference.",
+                      "facts": [{"key": "F1", "formatted": "26.9%", "label": "female",
+                                 "source_tool": "get_distribution"}],
+                      "steps": [], "validation_passed": True, "fell_back": False,
+                      "degraded": False, "revised": True,
+                      "critique": {"ok": False, "checked": True,
+                                   "issues": ["a 0.8 point gap is not meaningful"]}}},
+    ]
+    app.session_state["pending"] = None
+    app.run()
+    assert not app.exception
+    body = " ".join(m.value for m in app.markdown)
+    assert "0.8 point gap" in body

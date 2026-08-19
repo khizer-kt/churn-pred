@@ -123,8 +123,13 @@ RISK_BANDS = [(0.0, 0.33, "Low"), (0.33, 0.66, "Medium"), (0.66, 1.01, "High")]
 # Agent limits -- see docs/03-AGENT-SPEC.md sec.5 and sec.7
 # --------------------------------------------------------------------------
 MAX_TOOL_STEPS = 6
-MAX_REPLANS = 1
+MAX_REPLANS = 2   # re-planning is the only recovery path, so allow two
 MAX_ANSWER_RETRIES = 1
+
+# Second-opinion pass over the finished answer (docs: stretch goal "critic agent").
+# Costs one extra LLM call on answers that actually make a claim, which is why
+# should_review() skips refusals, fallbacks and fact-free replies.
+ENABLE_CRITIC = True
 EXEC_TIMEOUT_SECONDS = 5
 EXEC_MAX_ROWS = 50
 EXEC_MAX_CHARS = 4000

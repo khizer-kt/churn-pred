@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from src import config
+from src.agent import critic as critic_mod
 from src.agent import prompts, tools
 from src.agent.ledger import FactLedger, template_answer, validate_numbers
 from src.agent.verify import Status, verify
@@ -60,6 +61,13 @@ class AgentResponse:
     validation_passed: bool = True
     fell_back: bool = False    # the answer was REJECTED for an ungrounded number
     degraded: bool = False     # the model/infrastructure failed; not a grounding problem
+    critique: dict = field(
+        # Defaults to an explicit "not checked" rather than an empty dict, so the
+        # UI can distinguish a review that passed from one that never ran.
+        default_factory=lambda: {"ok": True, "issues": [], "checked": False,
+                                 "skipped_because": "no claim to review"}
+    )
+    revised: bool = False      # the critic sent it back and the answer was rewritten
     llm_calls: int = 0
     seconds: float = 0.0
     error: str | None = None
@@ -74,10 +82,24 @@ class AgentResponse:
             "validation_passed": self.validation_passed,
             "fell_back": self.fell_back,
             "degraded": self.degraded,
+            "critique": self.critique,
+            "revised": self.revised,
             "llm_calls": self.llm_calls,
             "seconds": round(self.seconds, 2),
             "error": self.error,
         }
+
+
+def _friendly_llm_error(exc: Exception) -> str:
+    """A sentence for the user. The detail goes to the log."""
+    text = str(exc).lower()
+    if "rate_limit" in text or "429" in text:
+        if "per day" in text or "tpd" in text:
+            return ("The language model's free daily quota is used up, so I cannot "
+                    "answer new questions until it resets.")
+        return ("The language model is rate limited right now. Waiting a moment and "
+                "asking again usually works.")
+    return "The language model is unavailable right now."
 
 
 def _truncate(value: Any, limit: int = 1200) -> Any:
@@ -128,8 +150,13 @@ class ChurnAgent:
         try:
             self._run(question, history or [], response)
         except LLMUnavailable as exc:
+            # The provider's error text is for the log, not the user. It carries
+            # the organisation id, internal token counters and a wall of JSON --
+            # and those stray numbers are, correctly, unverifiable figures
+            # appearing in an answer.
+            logger.warning("LLM unavailable: %s", exc)
             response.error = "llm_unavailable"
-            response.text = self._degrade(ledger, f"The language model is unavailable ({exc}).")
+            response.text = self._degrade(ledger, _friendly_llm_error(exc))
             response.degraded = True
         except Exception as exc:  # never surface a traceback to the user
             logger.exception("Agent loop failed")
@@ -162,7 +189,6 @@ class ChurnAgent:
         replans_left = config.MAX_REPLANS
         executed: list[Step] = []
         index = 0
-        retries: dict[int, int] = {}
 
         while index < len(steps) and len(executed) < config.MAX_TOOL_STEPS:
             step = steps[index]
@@ -174,17 +200,13 @@ class ChurnAgent:
             step.status = verdict.status.value
             step.hint = verdict.hint
 
-            if verdict.status is Status.RETRY and retries.get(index, 0) < 1:
-                retries[index] = retries.get(index, 0) + 1
-                logger.info("Retrying step %d: %s", index, verdict.hint)
-                continue  # same step, one more attempt
-
-            # A step that has now failed twice is a planning problem, not bad
-            # luck. Escalate rather than dropping it -- otherwise a single failed
-            # step silently leaves nothing computed and the user gets a generic
-            # "I could not answer that" for a perfectly answerable question.
-            exhausted_retry = verdict.status is Status.RETRY and retries.get(index, 0) >= 1
-            if (verdict.status is Status.REPLAN or exhausted_retry) and replans_left > 0:
+            # Every tool here is deterministic, so re-running one with identical
+            # arguments produces an identical failure. Generated code that used a
+            # forbidden import will use it again; a filter that matched nothing
+            # will match nothing again. A failure means the ARGUMENTS were wrong,
+            # so the only useful recovery is to re-plan with the error as
+            # feedback -- which is also one request instead of two wasted ones.
+            if not verdict.ok and replans_left > 0:
                 replans_left -= 1
                 executed.append(step)
                 new_plan = self._replan(question, verdict.hint, executed)
@@ -193,7 +215,7 @@ class ChurnAgent:
                     if column not in response.missing_columns:
                         response.missing_columns.append(column)
                 steps = self._sanitise_steps(new_plan.get("steps") or [])
-                index, retries = 0, {}
+                index = 0
                 continue
 
             executed.append(step)
@@ -232,9 +254,11 @@ class ChurnAgent:
         # turned a perfectly good question into "I could not compute anything".
         context = self._context(succeeded) if not len(ledger) else ""
 
-        response.text, response.validation_passed, response.fell_back = self._compose(
+        (response.text, response.validation_passed, response.fell_back,
+         critique, response.revised) = self._compose(
             question, ledger, history, response.missing_columns, context
         )
+        response.critique = critique.to_dict()
 
     # ------------------------------------------------------------------
     def _plan(self, question: str, history: list[dict]) -> dict:
@@ -261,13 +285,56 @@ class ChurnAgent:
             return {"steps": [], "missing_columns": []}
 
     def _compose(self, question: str, ledger: FactLedger, history: list[dict],
-                 missing: list[str], context: str = "") -> tuple[str, bool, bool]:
-        """Draft, substitute, validate; retry once; then fall back deterministically."""
+                 missing: list[str], context: str = "",
+                 ) -> tuple[str, bool, bool, critic_mod.Critique, bool]:
+        """Draft, validate the numbers, then review the claim.
+
+        Two independent gates in sequence. The numeric validator is deterministic
+        and non-negotiable: no figure survives that does not trace to a
+        computation. The critic is a judgement call about whether the data
+        supports what is being said, so it gets exactly one revision and is
+        allowed to fail open -- a broken reviewer must not block a correct
+        answer.
+        """
+        rendered, ok, fell_back = self._draft(question, ledger, history, missing, context)
+        critique = critic_mod.Critique()
+
+        if fell_back:
+            return rendered, ok, fell_back, critique, False
+
+        critique = critic_mod.review(question, rendered, ledger, self.client, fell_back)
+        if critique.ok or not critique.issues:
+            return rendered, ok, fell_back, critique, False
+
+        logger.info("Critic rejected the answer: %s", critique.issues)
+        revised, revised_ok, revised_fell_back = self._draft(
+            question, ledger, history, missing, context,
+            critique=prompts.CRITIC_REVISION.format(issues=critique.as_feedback()),
+        )
+
+        # The rewrite is a fresh answer, so it goes back through the numeric gate.
+        # A revision that fixes the interpretation and breaks the grounding is not
+        # an improvement, so the original is kept in that case -- its numbers were
+        # verified even if its wording was criticised.
+        if revised_fell_back:
+            logger.warning("Revision failed numeric validation; keeping the original answer.")
+            return rendered, ok, fell_back, critique, False
+
+        # The revision is not re-reviewed. One critique and one rewrite bounds the
+        # cost at two extra calls per question, and a reviewer allowed to keep
+        # sending work back has no natural stopping point on a rate-limited tier.
+        return revised, revised_ok, revised_fell_back, critique, True
+
+    def _draft(self, question: str, ledger: FactLedger, history: list[dict],
+               missing: list[str], context: str = "",
+               critique: str = "") -> tuple[str, bool, bool]:
+        """One answer, retried once if it states a number nobody computed."""
         violations: list[str] = []
 
         for attempt in range(config.MAX_ANSWER_RETRIES + 1):
             messages = prompts.answerer_messages(
-                question, ledger, self._window(history), missing, violations or None, context
+                question, ledger, self._window(history), missing, violations or None,
+                context + critique,
             )
             draft = self.client.complete(messages).text
             rendered, unknown = ledger.substitute(draft)

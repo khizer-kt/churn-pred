@@ -89,6 +89,13 @@ def _sidebar() -> None:
             if "not found" in problem.lower():
                 st.code("python -m src.model.train", language="bash")
 
+        from src import config as _config
+        if _config.ENABLE_CRITIC:
+            st.caption(
+                ":material/rate_review: A second pass reviews each answer's claims "
+                "before you see it."
+            )
+
         usage = agent.client.usage.to_dict()
         if usage.get("calls"):
             st.divider()

@@ -144,10 +144,25 @@ def _evidence(payload: dict) -> None:
             "instead.", icon=":material/gpp_maybe:",
         )
     elif payload.get("validation_passed") and payload.get("facts"):
-        st.caption(
-            f":material/verified: every figure above traces to one of "
-            f"{len(payload['facts'])} computed values"
-        )
+        critique = payload.get("critique") or {}
+        line = (f":material/verified: every figure above traces to one of "
+                f"{len(payload['facts'])} computed values")
+        if payload.get("revised"):
+            line += " · rewritten after review"
+        elif critique.get("checked"):
+            line += " · reviewed by a second pass"
+        st.caption(line)
+
+        if payload.get("revised") and critique.get("issues"):
+            with st.expander("What the reviewer sent back"):
+                st.caption(
+                    "A second pass re-reads the finished answer and asks whether the data "
+                    "supports the claim. It reviews interpretation only -- the figures were "
+                    "already verified against the computations that produced them."
+                )
+                for issue in critique["issues"]:
+                    st.markdown(f"- {issue}")
+                st.caption("The answer above is the rewrite.")
 
     if payload.get("missing_columns"):
         st.info(

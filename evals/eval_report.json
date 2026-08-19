@@ -9,12 +9,12 @@
     "hallucinated": [],
     "guard_fired": false,
     "degraded": false,
-    "facts": 1,
+    "facts": 10,
     "steps": [
-      "run_analysis:ok"
+      "get_distribution:ok"
     ],
     "llm_calls": 2,
-    "seconds": 1.67
+    "seconds": 1.73
   },
   {
     "id": "total_customers",
@@ -31,13 +31,13 @@
       "run_analysis:ok"
     ],
     "llm_calls": 4,
-    "seconds": 1.34
+    "seconds": 1.72
   },
   {
     "id": "churn_by_contract",
     "category": "segment",
     "question": "What is the churn rate for each contract type?",
-    "answer": "Churn rates differ across contract types.  \n\n- Month\u2011to\u2011month: 42.7%  \n- Two\u202fyear: 2.8%  \n- One\u202fyear: 11.3%  ",
+    "answer": "The churn rates vary by contract type:\n\n- Month\u2011to\u2011month: 42.7%\n- One year: 11.3%\n- Two year: 2.8%\n\nOverall, the churn is highest for month\u2011to\u2011month contracts and lowest for two\u2011year contracts.",
     "passed": true,
     "failures": [],
     "hallucinated": [],
@@ -47,14 +47,14 @@
     "steps": [
       "get_distribution:ok"
     ],
-    "llm_calls": 6,
-    "seconds": 17.62
+    "llm_calls": 7,
+    "seconds": 5.75
   },
   {
     "id": "worst_payment_method",
     "category": "segment",
     "question": "Which payment method has the highest churn rate, and how many customers use it?",
-    "answer": "Electronic check has the highest churn rate at 45.3%, and it is used by 2,365 customers.  \n\n- Electronic check: 45.3%  \n- Mailed check: 19.1%  \n- Bank transfer (automatic): 16.7%  \n- Credit card (automatic): 15.2%",
+    "answer": "The Electronic check payment method has the highest churn rate at 45.3%, and it is used by 2,365 customers.  \n\n- Electronic check: churn 45.3%  \n- Mailed check: churn 19.1%  \n- Bank transfer (automatic): churn 16.7%  \n- Credit card (automatic): churn 15.2%",
     "passed": true,
     "failures": [],
     "hallucinated": [],
@@ -64,8 +64,8 @@
     "steps": [
       "get_distribution:ok"
     ],
-    "llm_calls": 8,
-    "seconds": 27.45
+    "llm_calls": 10,
+    "seconds": 35.75
   },
   {
     "id": "fiber_optic_churn",
@@ -81,14 +81,14 @@
     "steps": [
       "get_distribution:ok"
     ],
-    "llm_calls": 10,
-    "seconds": 12.93
+    "llm_calls": 13,
+    "seconds": 31.11
   },
   {
     "id": "senior_citizens",
     "category": "segment",
     "question": "How many senior citizens are in the data and do they churn more than non-seniors?",
-    "answer": "There are 1,142 senior citizens in the data. Their churn rate is 41.7%, which is higher than the churn rate of non\u2011senior customers (23.6%).  \n\n- Non\u2011senior churn rate: 23.6%  \n- Senior churn rate: 41.7%",
+    "answer": "There are 1,142 senior\u2011citizen customers in the data. Their churn rate is higher than that of non\u2011seniors.\n\n- Non\u2011senior churn rate: 23.6%\n- Senior churn rate: 41.7%",
     "passed": true,
     "failures": [],
     "hallucinated": [],
@@ -98,14 +98,14 @@
     "steps": [
       "get_distribution:ok"
     ],
-    "llm_calls": 12,
-    "seconds": 17.42
+    "llm_calls": 16,
+    "seconds": 23.81
   },
   {
     "id": "median_tenure",
     "category": "distribution",
     "question": "What is the median tenure of customers?",
-    "answer": "The median tenure of customers is 29. This means that half of the customers have been with the company for 29 time units or less.",
+    "answer": "The median tenure of customers is 29.",
     "passed": true,
     "failures": [],
     "hallucinated": [],
@@ -115,14 +115,14 @@
     "steps": [
       "run_analysis:ok"
     ],
-    "llm_calls": 14,
-    "seconds": 28.85
+    "llm_calls": 18,
+    "seconds": 10.29
   },
   {
     "id": "tenure_by_outcome",
     "category": "distribution",
     "question": "What is the average tenure of customers who churned versus those who stayed?",
-    "answer": "The dataset provides average tenure broken down by churn status.  \n\n- Retained (Churn = 0): 37.57  \n- Churned (Churn = 1): 17.98",
+    "answer": "Age data is not available in this dataset; it contains information on customer tenure, which can be used as an alternative.  \nThe average tenure differs between customers who churned and those who stayed:\n\n- Churn\u202f=\u202f0 (did not churn): average tenure\u202f=\u202f37.57  \n- Churn\u202f=\u202f1 (churned): average tenure\u202f=\u202f17.98",
     "passed": true,
     "failures": [],
     "hallucinated": [],
@@ -132,14 +132,14 @@
     "steps": [
       "run_analysis:ok"
     ],
-    "llm_calls": 16,
-    "seconds": 12.55
+    "llm_calls": 21,
+    "seconds": 13.79
   },
   {
     "id": "gender_effect",
     "category": "segment",
     "question": "Does churn differ between male and female customers?",
-    "answer": "The churn rate for male customers is 26.2% and for female customers it is 26.9%, showing a modestly higher churn among females.  \n\n- Male: 26.2%  \n- Female: 26.9%",
+    "answer": "Female customers have a slightly higher churn rate than male customers. The male churn rate is 26.2% while the female churn rate is 26.9%.  \n\n- Male churn count: 930  \n- Female churn count: 939  ",
     "passed": true,
     "failures": [],
     "hallucinated": [],
@@ -149,14 +149,14 @@
     "steps": [
       "get_distribution:ok"
     ],
-    "llm_calls": 18,
-    "seconds": 9.14
+    "llm_calls": 24,
+    "seconds": 12.83
   },
   {
     "id": "compound_segment",
     "category": "multi_step",
     "question": "What is the churn rate for month-to-month customers on fiber optic who pay by electronic check, and how many are there?",
-    "answer": "The churn rate for month\u2011to\u2011month customers on fiber optic who pay by electronic check is 60.4%, and there are 1,307 such customers.",
+    "answer": "The churn rate for month\u2011to\u2011month customers on fiber optic who pay by electronic check is 60.4%.  \nThere are 1,307 such customers.",
     "passed": true,
     "failures": [],
     "hallucinated": [],
@@ -166,14 +166,14 @@
     "steps": [
       "run_analysis:ok"
     ],
-    "llm_calls": 20,
-    "seconds": 19.51
+    "llm_calls": 27,
+    "seconds": 13.05
   },
   {
     "id": "highest_risk_and_contract",
     "category": "multi_step",
     "question": "Which customers are most likely to churn, and does that relate to contract type?",
-    "answer": "The ten customers with the highest churn risk are the top\u2011risk group (\u202f10\u202fcustomers) whose risk scores range from 84.7% down to 83.9%.  \nChurn likelihood varies sharply by contract type, with the month\u2011to\u2011month segment showing the highest churn rate of 42.7%, the one\u2011year segment at 11.3%, and the two\u2011year segment the lowest at 2.8%.  \n\n**Churn rate by contract type**\n\n- Month\u2011to\u2011month: 42.7%\n- One year: 11.3%\n- Two year: 2.8%\n\nThus, customers with the highest risk scores are most likely to churn, and the propensity to churn is strongly linked to having a month\u2011to\u2011month contract.",
+    "answer": "Customers with the highest risk scores \u2013\u202f84.7% and\u202f84.7% \u2013\u202fare the most likely to churn.  \nChurn varies sharply by contract type, with month\u2011to\u2011month contracts showing a much higher churn rate than longer\u2011term plans.  \n\n- Month\u2011to\u2011month: 42.7%  \n- One\u202fyear: 11.3%  \n- Two\u202fyear: 2.8%",
     "passed": true,
     "failures": [],
     "hallucinated": [],
@@ -184,8 +184,8 @@
       "run_analysis:ok",
       "get_distribution:ok"
     ],
-    "llm_calls": 22,
-    "seconds": 13.17
+    "llm_calls": 30,
+    "seconds": 24.84
   },
   {
     "id": "individual_customer",
@@ -201,14 +201,14 @@
     "steps": [
       "predict_churn_risk:ok"
     ],
-    "llm_calls": 24,
-    "seconds": 14.89
+    "llm_calls": 33,
+    "seconds": 14.58
   },
   {
     "id": "what_if_contract",
     "category": "what_if",
     "question": "What happens to customer 3668-QPYBK's churn risk if they switch to a two year contract?",
-    "answer": "Switching to a two\u2011year contract lowers the churn risk from 29.2% to 9.7%, a drop of -19.5 pp.  \n\n- Current risk: 29.2%  \n- Two\u2011year contract risk: 9.7%  ",
+    "answer": "- Current churn risk: 29.2%  \n- Predicted churn risk with a two\u2011year contract: 9.7%  \n- Change: -19.5 pp (lower)  \n\nSwitching to a two\u2011year contract would reduce the customer\u2019s churn risk from the current level to the lower predicted level.",
     "passed": true,
     "failures": [],
     "hallucinated": [],
@@ -219,8 +219,8 @@
       "predict_churn_risk:ok",
       "predict_churn_risk:ok"
     ],
-    "llm_calls": 26,
-    "seconds": 8.18
+    "llm_calls": 37,
+    "seconds": 30.25
   },
   {
     "id": "trap_region",
@@ -234,8 +234,8 @@
     "degraded": false,
     "facts": 0,
     "steps": [],
-    "llm_calls": 27,
-    "seconds": 11.67
+    "llm_calls": 38,
+    "seconds": 11.31
   },
   {
     "id": "trap_revenue_trend",
@@ -249,24 +249,31 @@
     "degraded": false,
     "facts": 0,
     "steps": [],
-    "llm_calls": 28,
-    "seconds": 1.48
+    "llm_calls": 39,
+    "seconds": 10.19
   },
   {
     "id": "empty_segment",
     "category": "empty",
     "question": "How many customers have no phone service but do have multiple lines?",
-    "answer": "There are 0 customers who have no phone service but do have multiple lines. This indicates that none of the customers meet both conditions.",
-    "passed": true,
-    "failures": [],
-    "hallucinated": [],
-    "guard_fired": false,
-    "degraded": false,
-    "facts": 1,
-    "steps": [
-      "run_analysis:ok"
+    "answer": "The language model is unavailable (Groq request failed after 4 attempts: Error code: 429 - {'error': {'message': 'Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01m0cnrz4ken6apn2jmqfw1kvy` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198637, Requested 2412. Please try again in 7m33.167999999s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}). Please try again in a moment.",
+    "passed": false,
+    "failures": [
+      "did not report an empty result"
     ],
-    "llm_calls": 30,
-    "seconds": 11.74
+    "hallucinated": [
+      "429",
+      "-120",
+      "200000,",
+      "198637,",
+      "2412.",
+      "33.167999999"
+    ],
+    "guard_fired": false,
+    "degraded": true,
+    "facts": 0,
+    "steps": [],
+    "llm_calls": 39,
+    "seconds": 92.72
   }
 ]

@@ -32,7 +32,10 @@ TOOLS
                                      e.g. overrides={{"Contract": "Two year"}}.
   run_analysis(code, purpose)         Pandas, only when nothing above fits. `df` has all
                                      columns plus `risk_score`. Assign to `result`.
-                                     No imports, no file I/O, no while loops.
+                                     `pd` and `np` are ALREADY IMPORTED and ready to use.
+                                     An `import` statement of any kind is REJECTED and the
+                                     step fails -- including numpy, pandas, sklearn, scipy
+                                     and statsmodels. No file I/O and no while loops.
 
 RULES
 1. Only the columns listed above exist. If the question needs a column that is not there,
@@ -223,3 +226,64 @@ def answerer_messages(
         messages += history
     messages.append({"role": "user", "content": question})
     return messages
+
+
+# ---------------------------------------------------------------------------
+# Critic
+# ---------------------------------------------------------------------------
+CRITIC_SYSTEM = """You review a data analyst's finished answer before it reaches the user.
+
+You are NOT checking arithmetic. Every figure in the answer has already been verified \
+against the computation that produced it. Do not recompute anything, and do not ask for \
+numbers that are not in the fact list.
+
+You are checking whether the DATA SUPPORTS THE CLAIM. Reject only for these:
+
+1. OVERSTATED DIFFERENCE. A small gap described as if it were meaningful. Two rates a
+   fraction of a percentage point apart across thousands of customers is noise, and calling
+   it "higher" or "more likely" without qualification is wrong even when both numbers are
+   correct.
+2. UNSUPPORTED COMPARISON. A comparative or superlative claim ("the highest", "more than")
+   where the facts cover only one side of it.
+3. CAUSAL LANGUAGE. "Causes", "drives", "leads to", "because of" applied to what is only an
+   association. Predictive association is all this data can show.
+4. WRONG QUESTION. The answer addresses something other than what was asked.
+5. CONTRADICTION. The prose says something the listed facts do not support, or reverses
+   their direction.
+6. INVENTED CONTEXT. Claims about columns, time periods or segments that are not in the
+   facts -- this dataset is a single snapshot with no dates.
+
+Do NOT reject for: brevity, formatting, tone, missing caveats you merely would have liked,
+or for not answering questions that were not asked. A correct, plainly-worded answer passes.
+
+Output JSON only:
+{{"verdict": "ok" or "revise", "issues": ["specific, actionable, one per problem"]}}
+
+Each issue must name what to change. "Too confident" is useless; "a 0.8 point gap across
+~3,500 customers per group should be described as no meaningful difference" is actionable."""
+
+CRITIC_USER = """QUESTION ASKED
+{question}
+
+FACTS THE ANALYST COMPUTED
+{facts}
+
+ANSWER TO REVIEW
+{answer}"""
+
+
+def critic_messages(question: str, answer: str, ledger: FactLedger) -> list[dict]:
+    return [
+        {"role": "system", "content": CRITIC_SYSTEM},
+        {"role": "user", "content": CRITIC_USER.format(
+            question=question, facts=ledger.as_prompt_block(), answer=answer)},
+    ]
+
+
+CRITIC_REVISION = """
+A REVIEWER REJECTED YOUR PREVIOUS ANSWER for these reasons:
+{issues}
+
+Rewrite it addressing every point. The same rules still apply: cite [[Fx]] tokens and never
+type a digit. If a claim cannot be supported by the facts, remove it or state the limitation
+plainly rather than softening the wording and keeping it."""
