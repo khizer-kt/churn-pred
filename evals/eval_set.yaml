@@ -1,0 +1,106 @@
+# Evaluation set -- 16 questions with known-correct answers.
+#
+# Ground truth is computed from the cleaned dataset, not copied from a report.
+# Every value here was recomputed after cleaning: TechSupport and OnlineSecurity
+# in particular shift once the "No internet service" level collapses into "No"
+# (the 1,526 no-internet customers fold in), so the pre-cleaning figures would
+# have been wrong.
+#
+# check types:
+#   values   - each number must appear in the answer, in any sane rendering
+#              (26.54, 26.5, 0.2654 and "26.54%" all satisfy 26.54)
+#   refusal  - the agent must say the column does not exist and must not
+#              fabricate a statistic for it
+#   empty    - the agent must report that nothing matched
+#   phrases  - the answer must contain these substrings (case-insensitive)
+
+- id: overall_churn_rate
+  category: lookup
+  question: What is the overall churn rate?
+  expect: {values: [26.54]}
+
+- id: total_customers
+  category: lookup
+  question: How many customers are in this dataset?
+  expect: {values: [7043]}
+
+- id: churn_by_contract
+  category: segment
+  question: What is the churn rate for each contract type?
+  expect: {values: [42.71, 11.27, 2.83]}
+
+- id: worst_payment_method
+  category: segment
+  question: Which payment method has the highest churn rate, and how many customers use it?
+  expect:
+    values: [45.29, 2365]
+    phrases: ["electronic check"]
+
+- id: fiber_optic_churn
+  category: segment
+  question: What is the churn rate for fiber optic customers?
+  expect: {values: [41.89]}
+
+- id: senior_citizens
+  category: segment
+  question: How many senior citizens are in the data and do they churn more than non-seniors?
+  expect: {values: [1142, 41.68, 23.61]}
+
+- id: median_tenure
+  category: distribution
+  question: What is the median tenure of customers?
+  expect: {values: [29]}
+
+- id: tenure_by_outcome
+  category: distribution
+  question: What is the average tenure of customers who churned versus those who stayed?
+  expect: {values: [17.98, 37.57]}
+
+- id: gender_effect
+  category: segment
+  # Included because the honest answer is "almost none" -- a model inclined to
+  # tell a story will manufacture a difference here.
+  question: Does churn differ between male and female customers?
+  expect: {values: [26.92, 26.16]}
+
+- id: compound_segment
+  category: multi_step
+  question: >-
+    What is the churn rate for month-to-month customers on fiber optic
+    who pay by electronic check, and how many are there?
+  expect: {values: [60.37, 1307]}
+
+- id: highest_risk_and_contract
+  category: multi_step
+  # The brief's own example: needs the model AND a dataset aggregation.
+  question: Which customers are most likely to churn, and does that relate to contract type?
+  expect: {values: [42.71, 2.83]}
+
+- id: individual_customer
+  category: prediction
+  question: What is the churn risk for customer 3668-QPYBK?
+  expect: {values: [29.22]}
+
+- id: what_if_contract
+  category: what_if
+  question: What happens to customer 3668-QPYBK's churn risk if they switch to a two year contract?
+  expect: {values: [29.22, 9.74]}
+
+- id: trap_region
+  category: refusal
+  # There is no geographic column of any kind. The brief's own sample question.
+  question: Does churn risk correlate with region?
+  expect: {refusal: true, phrases: ["region"]}
+
+- id: trap_revenue_trend
+  category: refusal
+  # No date column exists, so no metric can be tracked over time.
+  question: Show me the revenue trend for high-risk customers over the last year.
+  expect: {refusal: true}
+
+- id: empty_segment
+  category: empty
+  # Impossible by construction: verified zero violations of the
+  # PhoneService <-> MultipleLines relationship.
+  question: How many customers have no phone service but do have multiple lines?
+  expect: {empty: true}
