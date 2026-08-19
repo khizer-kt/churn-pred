@@ -29,6 +29,15 @@ secrets.toml
 artifacts/
 models/*.joblib
 
+# ...except the trained pipeline, which IS tracked. Streamlit Community Cloud
+# deploys straight from the repository and does not run the training step, so
+# without these three files the hosted app starts with no model. They total
+# ~15 KB. Regenerate with: python -m src.model.train
+!artifacts/
+!artifacts/pipeline.joblib
+!artifacts/metrics.json
+!artifacts/feature_meta.json
+
 # Testing / tooling caches
 .pytest_cache/
 .ruff_cache/
