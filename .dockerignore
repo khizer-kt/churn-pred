@@ -1,0 +1,34 @@
+# Build context hygiene. Anything not needed to run the app is excluded, which
+# keeps the context small and stops local state leaking into the image.
+
+.venv/
+venv/
+.git/
+.gitignore
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Secrets never enter the image -- the key is injected at runtime.
+.env
+*.key
+
+# Local planning notes and the supplied brief are not part of the app.
+docs/
+notebooks/
+ATS_AI_Engineer_Assessment_Brief.md
+ATS_AI_Engineer_Assessment_Brief.pdf
+
+# Duplicate of data/raw/Customer-Churn.csv, which is the copy the app reads.
+/Customer-Churn.csv
+
+# Model artifacts are trained during the build, not copied in. See Dockerfile.
+artifacts/
+
+*.log
+scratch/
+tmp/
+.DS_Store
