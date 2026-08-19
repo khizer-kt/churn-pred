@@ -234,9 +234,30 @@ The schema tool publishes what the dataset contains **and an explicit list of wh
 
 Asked *"does churn risk correlate with region?"*, the agent names the absence, says what the data does cover, and offers the nearest legitimate substitute labelled as a substitute. Asked for a revenue trend, it explains there is no date column and offers revenue by tenure cohort with the caveat that it compares different customers at different lifecycle stages rather than following one over time.
 
+### 5. A second opinion on the claim
+
+The validator guarantees every **number** is real. It cannot catch a wrong **claim** built from right numbers — an answer that correctly reports 26.9% versus 26.2% and then calls the difference meaningful when it is inside sampling noise. Every figure grounded, conclusion still wrong.
+
+So a critic pass (`src/agent/critic.py`) re-reads the finished answer against the facts that were computed and asks whether the data supports what is being said. It rejects for overstated differences, comparisons where only one side was computed, causal language applied to association, answering a different question, and claims about columns or time periods that do not exist.
+
+It reviews **interpretation only and never recomputes**. A critic invited to check arithmetic would start producing numbers of its own, which is the failure the rest of the system exists to prevent.
+
+Verified against the case that motivated it. Given a draft asserting that women are *"substantially"* more likely to churn and that being female is a *"clear driver"*, it returned both faults:
+
+> - Overstated difference: the 0.76 percentage-point gap is small and should not be described as substantial
+> - Causal language: claiming that being female is a clear driver of churn is not supported by the data
+
+That answer would otherwise have shipped with every figure correctly grounded.
+
+Three rules keep it from doing harm. The rewrite goes **back through the numeric gate** — a revision that fixes the wording and breaks the grounding is not an improvement, and the original is kept instead. It is **never re-reviewed**: one critique and one rewrite, because a reviewer allowed to keep sending work back has no natural stopping point. And it **fails open** — a provider error leaves the answer untouched rather than blocking it, since a broken reviewer must not turn a working system into a broken one.
+
 ### Rate limits
 
-Free tiers throttle, and the brief calls efficient design part of the challenge. Measured over the eval set: **1.9 LLM calls and ~2,500 tokens per question.** The schema lives in the system prompt rather than being fetched; tool results are truncated; distribution questions route to a deterministic tool that needs no generated code; dispatch, verification and numeric checking are all plain Python. One 429 during development was absorbed by exponential backoff honouring `Retry-After`.
+Free tiers throttle, and the brief calls efficient design part of the challenge. Measured over the eval set: **2.2 LLM calls and ~2,900 tokens per question**, critic included. The schema lives in the system prompt rather than being fetched; tool results are truncated; distribution questions route to a deterministic tool that needs no generated code; dispatch, verification and numeric checking are all plain Python. One 429 during development was absorbed by exponential backoff honouring `Retry-After`.
+
+The critic adds a request to answers that make a claim, and enabling it naively **exhausted the free tier's daily token cap** part-way through an eval run — the brief's rate-limit point arriving in practice rather than in theory. A deterministic pre-filter now skips answers that state values without interpreting them; *"the overall churn rate is 26.5%"* has no interpretation to dispute.
+
+The effect is measurable: the critic ran on **6 of 16** questions rather than all of them, so the cost of the second opinion was **+0.3 calls per question, not +1.0**. Two further fixes came out of the same run — provider errors no longer reach the user verbatim, and a daily quota is no longer retried like a per-minute burst limit, which had been spending four backoffs to reach an error that would not clear for hours.
 
 ## Results
 
@@ -246,7 +267,7 @@ Free tiers throttle, and the brief calls efficient design part of the challenge.
 |---|---|
 | Accuracy | **16/16 (100%)** |
 | Hallucination rate | **0/16 (0%)** |
-| LLM calls | 1.9 per question |
+| LLM calls | 2.2 per question |
 
 Sixteen questions with ground truth **recomputed from the cleaned dataset**, not transcribed. That mattered: `TechSupport` and `OnlineSecurity` shift once the sentinel level collapses (31.19% and 31.33%, not the pre-cleaning 41.6%/41.8%), so copied figures would have failed against a correct agent.
 
@@ -270,7 +291,7 @@ The API key is injected at runtime and never baked into the image. The image **t
 **Tests**
 
 ```bash
-python -m pytest tests/ -q      # 132 tests
+python -m pytest tests/ -q      # 161 tests
 ```
 
 They need no API key and no network: the agent loop tests stub the LLM, and the Streamlit tests drive the real app through `AppTest`. That is deliberate — you cannot make a live model fabricate a number on demand, so the failure branches are only testable against a stub.
@@ -282,11 +303,11 @@ src/
   config.py            paths, feature groups, cost model, agent limits
   data/                cleaning (C1–C9) and the single place the CSV is read
   model/               feature pipeline, training, callable prediction service
-  agent/               executor, tools, fact ledger, verifier, loop, prompts
+  agent/               executor, tools, fact ledger, verifier, critic, loop, prompts
   llm/client.py        Groq transport: backoff, model resolution, token accounting
 ui/                    Streamlit app, session state, three tab components
 evals/                 16-question set and the scoring harness
-tests/                 132 tests
+tests/                 161 tests
 ```
 
 `ui/` imports from `src/`, never the reverse — enforced by `tests/test_no_streamlit_in_src.py`. If the model imported Streamlit it would stop being callable from a notebook, the eval harness or a test, quietly breaking the brief's "don't leave it stuck in a notebook" requirement.
@@ -295,13 +316,13 @@ tests/                 132 tests
 
 ## Limitations and what I'd do with more time
 
-**The agent reports figures faithfully but does no significance testing.** Asked whether churn differs by gender it correctly returns 26.9% vs 26.2% and calls it "modestly higher" — but a 0.76pp gap on n≈3,500 per group is well inside noise. It should say so. A confidence-interval tool would fix this and is the single change I would make first.
+**Still no significance testing.** The critic catches an overstated gender gap when the wording is strong enough, but it is a language model judging phrasing, not a statistical test — it has no confidence interval to reason with and will not reliably flag a borderline case. A proper significance tool in the agent's toolset remains the single change I would make first.
 
 **One weak calibration bin.** The 0.4–0.5 band predicts 0.454 against an observed 0.336 (n=119). Gradient boosting calibrates better there; it loses on Brier overall and on exact attribution, so it was not selected, but a mid-range risk figure deserves slightly more caution than the others.
 
 **Multi-turn memory is shallow.** The last four turns are passed verbatim; there is no entity resolution, so *"now break that down by contract"* works only when the previous question is still in the window.
 
-**No critic agent.** A second pass re-checking the final answer against raw data was a stretch goal I did not reach. The validator covers the numeric case, which is the part that matters most, but a critic would also catch wrong *claims* built from right numbers.
+**The critic is a judgement, not a guarantee.** Unlike the numeric validator, which is deterministic and non-negotiable, the critic is a second language model deciding whether a claim is fair. It fails open by design, so a provider outage silently means no review. It catches the clear cases; it is not a proof of anything.
 
 **React frontend not built.** Optional, ~3–4 hours, and it would demonstrate frontend skill rather than the agent engineering under assessment. I chose depth on the graded core instead. Stating that plainly seemed better than shipping a half-finished second UI.
 
@@ -321,4 +342,4 @@ I am able to explain any part of this submission.
 >
 > - **Hardest part:** the numeric-grounding guarantee. Prompting for it does not work; making it structural meant a ledger, citation tokens, and a validator, and the validator itself had a real hole that only live testing exposed.
 > - **What I had to learn:** that calibration and ranking are separate properties, and that `class_weight="balanced"` trades one for the other — which only matters because this model's output is spoken aloud to a user as a number.
-> - **What I'd do differently:** add significance testing to the agent's toolset earlier, and do manual testing of the UI far sooner. Every UI bug I found came from five minutes of clicking, not from 130 tests.
+> - **What I'd do differently:** add significance testing to the agent's toolset earlier, and do manual testing of the UI far sooner. Every UI bug I found came from five minutes of clicking, not from the test suite.

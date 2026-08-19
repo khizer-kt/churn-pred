@@ -75,6 +75,19 @@ def load_env(path: str | Path = ".env") -> None:
         os.environ.setdefault(key.strip(), value.strip())
 
 
+def _is_daily_quota_exhausted(exc: Exception) -> bool:
+    """Distinguish a daily cap from a per-minute burst limit.
+
+    Both arrive as a 429, but they need opposite handling. A per-minute limit
+    clears in seconds and is worth waiting out. A per-day cap does not clear for
+    hours, so backing off four times is two wasted minutes to arrive at the same
+    error -- and on a run of many questions that compounds into a system that
+    looks hung rather than rate limited.
+    """
+    text = str(exc).lower()
+    return "429" in text and ("per day" in text or "tpd" in text or "daily" in text)
+
+
 def _is_json_validate_failure(exc: Exception) -> bool:
     """The provider rejected the completion because it was not valid JSON."""
     return "json_validate_failed" in str(exc)
@@ -281,6 +294,14 @@ class LLMClient:
             except Exception as exc:
                 last_error = exc
                 status = _status_code(exc)
+
+                # A daily cap is not worth retrying: it will not clear today.
+                if _is_daily_quota_exhausted(exc):
+                    raise LLMUnavailable(
+                        "The free daily token quota for this model is exhausted. "
+                        "It resets on the provider's daily schedule."
+                    ) from exc
+
                 is_rate_limit = status == 429
                 # 4xx other than 429 means the request itself is wrong -- retrying
                 # it just burns rate-limit budget to get the same error back.

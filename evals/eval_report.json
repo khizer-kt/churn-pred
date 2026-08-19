@@ -1,0 +1,272 @@
+[
+  {
+    "id": "overall_churn_rate",
+    "category": "lookup",
+    "question": "What is the overall churn rate?",
+    "answer": "The overall churn rate is 26.5%.",
+    "passed": true,
+    "failures": [],
+    "hallucinated": [],
+    "guard_fired": false,
+    "degraded": false,
+    "facts": 10,
+    "steps": [
+      "get_distribution:ok"
+    ],
+    "llm_calls": 2,
+    "seconds": 1.64
+  },
+  {
+    "id": "total_customers",
+    "category": "lookup",
+    "question": "How many customers are in this dataset?",
+    "answer": "There are 7043 customers in the dataset.",
+    "passed": true,
+    "failures": [],
+    "hallucinated": [],
+    "guard_fired": false,
+    "degraded": false,
+    "facts": 1,
+    "steps": [
+      "run_analysis:ok"
+    ],
+    "llm_calls": 4,
+    "seconds": 1.68
+  },
+  {
+    "id": "churn_by_contract",
+    "category": "segment",
+    "question": "What is the churn rate for each contract type?",
+    "answer": "The churn rates vary by contract type:\n\n- Month\u2011to\u2011month: 42.7%\n- Two\u2011year: 2.8%\n- One\u2011year: 11.3%\n\nOverall, the churn is highest for month\u2011to\u2011month contracts and lowest for two\u2011year contracts.",
+    "passed": true,
+    "failures": [],
+    "hallucinated": [],
+    "guard_fired": false,
+    "degraded": false,
+    "facts": 14,
+    "steps": [
+      "get_distribution:ok"
+    ],
+    "llm_calls": 7,
+    "seconds": 26.42
+  },
+  {
+    "id": "worst_payment_method",
+    "category": "segment",
+    "question": "Which payment method has the highest churn rate, and how many customers use it?",
+    "answer": "The payment method with the highest churn rate is **Electronic check**, which churns at 45.3% and is used by 2,365 customers.\n\n- Electronic check: 45.3%\n- Mailed check: 19.1%\n- Bank transfer (automatic): 16.7%\n- Credit card (automatic): 15.2%\n\nAll other methods have lower churn rates than Electronic check.",
+    "passed": true,
+    "failures": [],
+    "hallucinated": [],
+    "guard_fired": false,
+    "degraded": false,
+    "facts": 18,
+    "steps": [
+      "get_distribution:ok"
+    ],
+    "llm_calls": 10,
+    "seconds": 19.94
+  },
+  {
+    "id": "fiber_optic_churn",
+    "category": "segment",
+    "question": "What is the churn rate for fiber optic customers?",
+    "answer": "The churn rate for fiber\u2011optic customers is 41.9%.",
+    "passed": true,
+    "failures": [],
+    "hallucinated": [],
+    "guard_fired": false,
+    "degraded": false,
+    "facts": 14,
+    "steps": [
+      "get_distribution:ok"
+    ],
+    "llm_calls": 12,
+    "seconds": 12.13
+  },
+  {
+    "id": "senior_citizens",
+    "category": "segment",
+    "question": "How many senior citizens are in the data and do they churn more than non-seniors?",
+    "answer": "There are 1,142 senior citizens in the data. Their churn rate is 41.7%, which is higher than the churn rate for non\u2011seniors at 23.6%.  \n\n- Non\u2011seniors: churn rate 23.6%  \n- Seniors: churn rate 41.7%",
+    "passed": true,
+    "failures": [],
+    "hallucinated": [],
+    "guard_fired": false,
+    "degraded": false,
+    "facts": 10,
+    "steps": [
+      "get_distribution:ok"
+    ],
+    "llm_calls": 15,
+    "seconds": 29.91
+  },
+  {
+    "id": "median_tenure",
+    "category": "distribution",
+    "question": "What is the median tenure of customers?",
+    "answer": "The median tenure of customers is 29.",
+    "passed": true,
+    "failures": [],
+    "hallucinated": [],
+    "guard_fired": false,
+    "degraded": false,
+    "facts": 1,
+    "steps": [
+      "run_analysis:ok"
+    ],
+    "llm_calls": 17,
+    "seconds": 20.34
+  },
+  {
+    "id": "tenure_by_outcome",
+    "category": "distribution",
+    "question": "What is the average tenure of customers who churned versus those who stayed?",
+    "answer": "The data set provides average tenure for churned and retained customers.  \n- Customers who stayed (Churn\u202f=\u202f0) have an average tenure of 37.57.  \n- Customers who churned (Churn\u202f=\u202f1) have an average tenure of 17.98.",
+    "passed": true,
+    "failures": [],
+    "hallucinated": [],
+    "guard_fired": false,
+    "degraded": false,
+    "facts": 5,
+    "steps": [
+      "run_analysis:ok"
+    ],
+    "llm_calls": 19,
+    "seconds": 17.5
+  },
+  {
+    "id": "gender_effect",
+    "category": "segment",
+    "question": "Does churn differ between male and female customers?",
+    "answer": "The churn rate for male customers is 26.2%, while for female customers it is 26.9%. This indicates that churn is slightly higher among female customers.  \n\n- Male: 26.2%  \n- Female: 26.9%",
+    "passed": true,
+    "failures": [],
+    "hallucinated": [],
+    "guard_fired": false,
+    "degraded": false,
+    "facts": 10,
+    "steps": [
+      "get_distribution:ok"
+    ],
+    "llm_calls": 22,
+    "seconds": 12.02
+  },
+  {
+    "id": "compound_segment",
+    "category": "multi_step",
+    "question": "What is the churn rate for month-to-month customers on fiber optic who pay by electronic check, and how many are there?",
+    "answer": "The churn rate for month\u2011to\u2011month customers on fiber optic who pay by electronic check is 60.4%, and there are 1,307 such customers.",
+    "passed": true,
+    "failures": [],
+    "hallucinated": [],
+    "guard_fired": false,
+    "degraded": false,
+    "facts": 3,
+    "steps": [
+      "run_analysis:ok"
+    ],
+    "llm_calls": 24,
+    "seconds": 27.03
+  },
+  {
+    "id": "highest_risk_and_contract",
+    "category": "multi_step",
+    "question": "Which customers are most likely to churn, and does that relate to contract type?",
+    "answer": "Customers with the highest risk scores\u201484.7% and 84.7% (followed by 84.6%)\u2014are the most likely to churn. Churn rates differ markedly by contract type:\n\n- Month\u2011to\u2011month: 42.7%\n- One\u2011year: 11.3%\n- Two\u2011year: 2.8%\n\nThe much higher churn rate for month\u2011to\u2011month contracts indicates a strong relationship between contract type and churn likelihood.",
+    "passed": true,
+    "failures": [],
+    "hallucinated": [],
+    "guard_fired": false,
+    "degraded": false,
+    "facts": 25,
+    "steps": [
+      "run_analysis:ok",
+      "get_distribution:ok"
+    ],
+    "llm_calls": 27,
+    "seconds": 25.02
+  },
+  {
+    "id": "individual_customer",
+    "category": "prediction",
+    "question": "What is the churn risk for customer 3668-QPYBK?",
+    "answer": "The churn risk for customer\u202f3668\u2011QPYBK is 29.2%.",
+    "passed": true,
+    "failures": [],
+    "hallucinated": [],
+    "guard_fired": false,
+    "degraded": false,
+    "facts": 11,
+    "steps": [
+      "predict_churn_risk:ok"
+    ],
+    "llm_calls": 29,
+    "seconds": 13.03
+  },
+  {
+    "id": "what_if_contract",
+    "category": "what_if",
+    "question": "What happens to customer 3668-QPYBK's churn risk if they switch to a two year contract?",
+    "answer": "Switching to a two\u2011year contract lowers the churn risk from 29.2% to 9.7%, a reduction of -19.5 pp.  \n\n- Current risk: 29.2%  \n- Two\u2011year contract risk: 9.7%  \n- Change: -19.5 pp",
+    "passed": true,
+    "failures": [],
+    "hallucinated": [],
+    "guard_fired": false,
+    "degraded": false,
+    "facts": 24,
+    "steps": [
+      "predict_churn_risk:ok",
+      "predict_churn_risk:ok"
+    ],
+    "llm_calls": 31,
+    "seconds": 13.05
+  },
+  {
+    "id": "trap_region",
+    "category": "refusal",
+    "question": "Does churn risk correlate with region?",
+    "answer": "This dataset does not contain **region**. There is no geographic column of any kind -- no region, state, city or country.\n\nWhat the dataset does cover: demographics (gender, senior status, partner, dependents), account details (tenure, contract, billing, payment method), nine service flags, and charges. Ask about any of those and I can compute it.",
+    "passed": true,
+    "failures": [],
+    "hallucinated": [],
+    "guard_fired": false,
+    "degraded": false,
+    "facts": 0,
+    "steps": [],
+    "llm_calls": 32,
+    "seconds": 7.96
+  },
+  {
+    "id": "trap_revenue_trend",
+    "category": "refusal",
+    "question": "Show me the revenue trend for high-risk customers over the last year.",
+    "answer": "This dataset does not contain **revenue trend**. There is no date column, so no metric can be tracked over time. The data is a single cross-sectional snapshot. The nearest legitimate substitute is revenue by tenure cohort, which compares different customers at different lifecycle stages rather than following one cohort through time.\n\nThis dataset does not contain **date**. There is no date, timestamp, signup-date or churn-date column.\n\nWhat the dataset does cover: demographics (gender, senior status, partner, dependents), account details (tenure, contract, billing, payment method), nine service flags, and charges. Ask about any of those and I can compute it.",
+    "passed": true,
+    "failures": [],
+    "hallucinated": [],
+    "guard_fired": false,
+    "degraded": false,
+    "facts": 0,
+    "steps": [],
+    "llm_calls": 33,
+    "seconds": 9.32
+  },
+  {
+    "id": "empty_segment",
+    "category": "empty",
+    "question": "How many customers have no phone service but do have multiple lines?",
+    "answer": "The number of customers who have no phone service but do have multiple lines is 0. No customers meet both of those criteria.",
+    "passed": true,
+    "failures": [],
+    "hallucinated": [],
+    "guard_fired": false,
+    "degraded": false,
+    "facts": 1,
+    "steps": [
+      "run_analysis:ok"
+    ],
+    "llm_calls": 35,
+    "seconds": 25.43
+  }
+]

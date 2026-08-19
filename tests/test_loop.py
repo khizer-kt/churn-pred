@@ -353,3 +353,37 @@ def test_step_failing_twice_escalates_to_a_replan():
     assert any(s.tool == "get_distribution" and s.status == "ok" for s in response.steps)
     assert response.validation_passed
     assert len(response.ledger) > 0
+
+
+def test_daily_quota_exhaustion_is_not_retried():
+    """A per-minute limit clears in seconds; a per-day cap does not clear today.
+
+    Both arrive as 429. Retrying the daily one spends four backoffs to reach the
+    identical error, which across a run of questions looks like a hang rather
+    than a quota message.
+    """
+    from src.llm import client as client_mod
+
+    daily = Exception(
+        "Error code: 429 - Rate limit reached for model on tokens per day (TPD): "
+        "Limit 200000, Used 199195"
+    )
+    burst = Exception("Error code: 429 - Rate limit reached on tokens per minute (TPM)")
+
+    assert client_mod._is_daily_quota_exhausted(daily)
+    assert not client_mod._is_daily_quota_exhausted(burst)
+
+
+def test_daily_quota_message_carries_no_provider_detail():
+    """The organisation id and token counters belong in the log, not the reply."""
+    import re
+
+    from src.agent.loop import _friendly_llm_error
+    from src.llm.client import LLMUnavailable
+
+    msg = _friendly_llm_error(LLMUnavailable(
+        "Error code: 429 - Rate limit reached ... in organization org_01m0cnrz "
+        "on tokens per day (TPD): Limit 200000, Used 199195"
+    ))
+    assert "org_" not in msg
+    assert not re.search(r"\d", msg), "a user-facing error must not contain stray figures"
