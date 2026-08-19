@@ -285,3 +285,20 @@ def test_reviewed_answer_shows_the_reviewers_feedback(stub_chat):
     assert not app.exception
     body = " ".join(m.value for m in app.markdown)
     assert "0.8 point gap" in body
+
+
+def test_sidebar_survives_a_config_missing_a_newer_setting(stub_chat, monkeypatch):
+    """Streamlit re-runs the script on change but does not re-import modules.
+
+    A newly added setting can therefore be absent from a stale `config` while
+    `app.py` is already the version that reads it. That combination took the
+    whole page down with an AttributeError on the hosted app. The page must
+    degrade to a missing caption instead.
+    """
+    from src import config as real_config
+
+    monkeypatch.delattr(real_config, "ENABLE_CRITIC", raising=False)
+    app = AppTest.from_file(APP, default_timeout=TIMEOUT)
+    app.run()
+    assert not app.exception, [str(e) for e in app.exception]
+    assert any("Churn Analyst Agent" in t.value for t in app.title)

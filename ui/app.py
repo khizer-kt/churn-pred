@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from src import config                                  # noqa: E402
 from ui import state                                    # noqa: E402
 from ui.components import chat, explore, whatif         # noqa: E402
 
@@ -89,8 +90,13 @@ def _sidebar() -> None:
             if "not found" in problem.lower():
                 st.code("python -m src.model.train", language="bash")
 
-        from src import config as _config
-        if _config.ENABLE_CRITIC:
+        # getattr with a default rather than a bare attribute read. Streamlit
+        # re-executes the script when files change but does not re-import modules
+        # already in sys.modules, so a newly added setting can be missing from a
+        # stale `config` while this file is the current version. That combination
+        # took down the whole page with an AttributeError; now the worst case is
+        # one missing caption.
+        if getattr(config, "ENABLE_CRITIC", False):
             st.caption(
                 ":material/rate_review: A second pass reviews each answer's claims "
                 "before you see it."

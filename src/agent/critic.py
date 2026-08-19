@@ -56,7 +56,7 @@ def should_review(answer_text: str, ledger: FactLedger, fell_back: bool) -> tupl
     Each skip is a request not spent against a rate-limited free tier, and none
     of these cases has an interpretation to get wrong.
     """
-    if not config.ENABLE_CRITIC:
+    if not getattr(config, "ENABLE_CRITIC", True):
         return False, "critic disabled in config"
     if fell_back:
         # The deterministic template states computed values and draws no
