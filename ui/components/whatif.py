@@ -20,10 +20,7 @@ from ui import state
 
 def render() -> None:
     if not state.model_ready():
-        st.error(
-            "Model artifact not found. Run `python -m src.model.train` to build it, "
-            "then reload this page."
-        )
+        st.error(state.model_problem() or "The churn model is unavailable.")
         return
 
     mode = st.radio(

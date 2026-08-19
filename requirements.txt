@@ -1,7 +1,7 @@
 # Core data / modelling
 pandas>=2.2,<3
-numpy>=1.26,<3
-scikit-learn>=1.5,<2
+numpy>=2.0,<3
+scikit-learn>=1.9,<2   # must match the version that pickled artifacts/pipeline.joblib
 joblib>=1.4
 pyarrow>=16
 

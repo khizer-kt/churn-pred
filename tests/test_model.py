@@ -151,3 +151,55 @@ def test_model_beats_the_no_skill_baseline():
     assert metrics["models"][chosen]["cv"]["pr_auc"] > metrics["models"]["dummy"]["cv"]["pr_auc"]
     # Above ~0.75 on this dataset means leakage, not skill (docs/02-MODEL-SPEC sec.4.5).
     assert metrics["models"][chosen]["cv"]["pr_auc"] < 0.75
+
+
+# --- deployment resilience ---------------------------------------------------
+def test_model_status_distinguishes_missing_from_unloadable(tmp_path, monkeypatch):
+    """A misleading error costs more than no error.
+
+    The hosted app reported "Churn model not trained -- run python -m
+    src.model.train" for *every* failure, because the check swallowed all
+    exceptions. The likeliest deployment failure is not a missing file at all
+    but a version skew: an artifact pickled by one scikit-learn cannot always be
+    read by another. That needs a different fix and must say so.
+    """
+    from src import config
+
+    bad = tmp_path / "pipeline.joblib"
+    bad.write_text("not a pickle")
+    monkeypatch.setattr(config, "PIPELINE_PATH", bad)
+    service._load_artifacts.cache_clear()
+
+    ready, reason = service.model_status()
+    assert not ready
+    assert "could not be loaded" in reason
+    assert "train" not in reason.lower(), "must not blame a missing file for a load failure"
+    service._load_artifacts.cache_clear()
+
+
+def test_model_status_reports_a_missing_artifact_plainly(tmp_path, monkeypatch):
+    from src import config
+
+    monkeypatch.setattr(config, "PIPELINE_PATH", tmp_path / "absent.joblib")
+    service._load_artifacts.cache_clear()
+
+    ready, reason = service.model_status()
+    assert not ready and "not found" in reason
+    service._load_artifacts.cache_clear()
+
+
+def test_retraining_reproduces_the_same_model():
+    """ensure_model() may rebuild the artifact, so the rebuild must be identical.
+
+    random_state is fixed throughout; if this ever drifts, a self-healed
+    deployment would silently serve different numbers from the committed one.
+    """
+    before = service.predict_churn_risk(KNOWN_ID)["risk_score"]
+
+    from src.model.train import main as train_model
+    train_model()
+    service._load_artifacts.cache_clear()
+    service._scored_population.cache_clear()
+
+    after = service.predict_churn_risk(KNOWN_ID)["risk_score"]
+    assert before == after, f"retraining changed the prediction: {before} -> {after}"

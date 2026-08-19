@@ -36,7 +36,7 @@ def render() -> None:
         return
 
     if not state.model_ready():
-        st.error("Model artifact not found. Run `python -m src.model.train`, then reload.")
+        st.error(state.model_problem() or "The churn model is unavailable.")
         return
 
     # Render is a pure function of session state. Nothing below both mutates

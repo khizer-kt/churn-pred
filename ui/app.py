@@ -79,8 +79,15 @@ def _sidebar() -> None:
                     f"{info['base_rate']:.3f}."
                 )
         else:
-            st.error("Churn model not trained", icon=":material/error:")
-            st.code("python -m src.model.train", language="bash")
+            st.error("Churn model unavailable", icon=":material/error:")
+            # Show what actually went wrong. "Run the trainer" is only the right
+            # advice when the artifact is missing; a load failure needs a
+            # different fix and deserves to say so.
+            problem = state.model_problem()
+            if problem:
+                st.caption(problem)
+            if "not found" in problem.lower():
+                st.code("python -m src.model.train", language="bash")
 
         usage = agent.client.usage.to_dict()
         if usage.get("calls"):

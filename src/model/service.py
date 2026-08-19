@@ -42,13 +42,55 @@ def _load_artifacts():
     return pipeline, meta, metrics
 
 
-def model_is_ready() -> bool:
-    """Cheap startup check so the app can fail with a message, not a traceback."""
+def model_status() -> tuple[bool, str]:
+    """(ready, reason). The reason is the ACTUAL failure, not a guess.
+
+    This used to swallow every exception and report "model not trained", which
+    is wrong for any cause other than a missing file -- and the likeliest cause
+    in a deployment is not a missing file at all but a version skew: an artifact
+    pickled by one scikit-learn cannot always be read by another. Reporting the
+    real error is the difference between a five-minute fix and an hour.
+    """
     try:
         _load_artifacts()
-        return True
-    except Exception:
-        return False
+        return True, ""
+    except ModelUnavailable as exc:
+        return False, str(exc)
+    except Exception as exc:
+        return False, (
+            f"The model artifact exists but could not be loaded: "
+            f"{type(exc).__name__}: {exc}"
+        )
+
+
+def model_is_ready() -> bool:
+    return model_status()[0]
+
+
+def ensure_model(retrain_on_failure: bool = True) -> tuple[bool, str]:
+    """Load the model, retraining once if the stored artifact is unusable.
+
+    A pickled sklearn pipeline is only guaranteed readable by the version that
+    wrote it. Pinning the dependency makes that rare; retraining makes it
+    recoverable. Training costs a few seconds and random_state is fixed, so the
+    rebuilt model is identical to the one that was committed.
+    """
+    ready, reason = model_status()
+    if ready or not retrain_on_failure:
+        return ready, reason
+
+    try:
+        from src.model.train import main as train_model
+
+        train_model()
+        _load_artifacts.cache_clear()
+        _scored_population.cache_clear()
+        ready, reason = model_status()
+        if ready:
+            return True, "Stored model artifact was unusable, so it was retrained on startup."
+        return False, reason
+    except Exception as exc:
+        return False, f"{reason} Retraining also failed: {type(exc).__name__}: {exc}"
 
 
 def get_threshold() -> float:

@@ -65,8 +65,20 @@ def get_model_info() -> dict[str, Any] | None:
         return None
 
 
+@st.cache_resource(show_spinner="Preparing the churn model...")
+def model_state() -> tuple[bool, str]:
+    """(ready, message). Cached as a resource so the retrain happens at most once
+    per process, not on every rerun."""
+    return service.ensure_model()
+
+
 def model_ready() -> bool:
-    return service.model_is_ready()
+    return model_state()[0]
+
+
+def model_problem() -> str:
+    """The actual reason the model is unavailable, for display."""
+    return model_state()[1]
 
 
 # ---------------------------------------------------------------------------
