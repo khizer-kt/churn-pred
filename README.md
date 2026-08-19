@@ -338,8 +338,10 @@ I am able to explain any part of this submission.
 
 ## Reflection
 
-> *[This section is mine to write — see the notes below and replace this block.]*
->
-> - **Hardest part:** the numeric-grounding guarantee. Prompting for it does not work; making it structural meant a ledger, citation tokens, and a validator, and the validator itself had a real hole that only live testing exposed.
-> - **What I had to learn:** that calibration and ranking are separate properties, and that `class_weight="balanced"` trades one for the other — which only matters because this model's output is spoken aloud to a user as a number.
-> - **What I'd do differently:** add significance testing to the agent's toolset earlier, and do manual testing of the UI far sooner. Every UI bug I found came from five minutes of clicking, not from the test suite.
+**The hardest part** was stopping the model making up numbers. I assumed this would mostly be a prompting problem. It isn't. You can tell a model to only use figures it computed and it will still round 42.71 to "about 43", or drop in a number that sounds about right. What worked was not letting it write numbers at all. Every value a tool computes gets stored with a key, the model writes `[[F1]]` instead of a digit, and the real value is substituted afterwards. A separate check then scans the finished text and rejects any number that doesn't match something computed. If that fails twice the user gets a plain table of values instead of a nice sentence, which I think is the right trade.
+
+That check had a bug I only found by using the app. It let through "actual churn of 100.0%" about a single customer, because a stored value of 1 matches 100 once you allow for percentages. I had read that code several times and never spotted it.
+
+**What I had to learn** was that a model can rank well and still give wrong probabilities. I used `class_weight="balanced"` at first, because that's the standard advice for imbalanced data. The ranking was fine but every probability came out too high, around 65% for a group that actually churned 33% of the time. If you only care who's top of the list that doesn't matter. My agent says the number out loud to the user, so it matters a lot. Removing the class weights fixed the probabilities and the ranking barely moved.
+
+**With more time** I'd add a proper significance test. Ask it now whether men or women churn more and it says women, 26.9% against 26.2%. Both numbers are correct, the gap is meaningless at this sample size, and nothing in the system knows that. I added a second model pass that reviews the wording, which helps, but it's a language model judging phrasing rather than an actual test. I'd also have started clicking around the app much sooner. Almost every UI bug I found came from two minutes of using it, not from the tests.
