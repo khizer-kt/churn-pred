@@ -17,7 +17,7 @@ streamlit run ui/app.py
 
 | | |
 |---|---|
-| **Live app** | _pending deployment_ |
+| **Live app** | **https://churn-pred-100.streamlit.app/** |
 | **Colab notebook** | _pending_ |
 | **Repository** | https://github.com/khizer-kt/churn-pred |
 
