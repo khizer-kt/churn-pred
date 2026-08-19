@@ -18,7 +18,7 @@ streamlit run ui/app.py
 | | |
 |---|---|
 | **Live app** | **https://churn-pred-100.streamlit.app/** |
-| **Colab notebook** | _pending_ |
+| **Colab notebook** | **[Open in Colab](https://colab.research.google.com/github/khizer-kt/churn-pred/blob/main/notebooks/churn_eda_and_training.ipynb)** — committed with outputs, so the analysis is readable without running it |
 | **Repository** | https://github.com/khizer-kt/churn-pred |
 
 > The hosted app sleeps after inactivity and takes ~30s to wake on first request — a slow first load is a cold start, not a broken app.
